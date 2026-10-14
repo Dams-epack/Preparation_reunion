@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Préparation de la réunion du lundi</title>
+<style>
+:root{
+  --bg:#F6F0EA;--surface:#fff;--fg:#1d3331;--muted:#5b6f6c;--line:#e1d8cd;
+  --accent:#305754;--accent-fg:#fff;--accent-soft:#E0EBFF;--cta:#9BF944;--cta-fg:#305754;--hov:#305754;--hov-fg:#fff;
+  --ok:#1a8a45;--ok-soft:#e1f5e8;--warn:#9a5b00;--warn-soft:#fdf0d3;--bad:#D11A1A;--band:#305754;--band-fg:#fff;
+  --font:"Helvetica Neue",Helvetica,Arial,sans-serif;--mono:ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#13211f;--surface:#1c2e2c;--fg:#eef3f2;--muted:#9fb5b2;--line:#2c4542;
+  --accent:#9BF944;--accent-fg:#305754;--accent-soft:#243b39;--hov:#273A80;
+  --ok:#4ade80;--ok-soft:#1b3a2a;--warn:#F7B32B;--warn-soft:#3a2d0c;--bad:#ff6b5e;--band:#0e1a19;color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#13211f;--surface:#1c2e2c;--fg:#eef3f2;--muted:#9fb5b2;--line:#2c4542;
+  --accent:#9BF944;--accent-fg:#305754;--accent-soft:#243b39;--hov:#273A80;
+  --ok:#4ade80;--ok-soft:#1b3a2a;--warn:#F7B32B;--warn-soft:#3a2d0c;--bad:#ff6b5e;--band:#0e1a19;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.45 var(--font);padding-bottom:48px}
+.brandbar{background:var(--band);color:#fff;display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:3px solid var(--cta)}
+.brandbar i{width:10px;height:10px;border-radius:2px;background:var(--cta)}
+.brandbar span{opacity:.75;font-size:.88rem}
+.brandbar .sp{flex:1}
+.wrap{max-width:1100px;margin:20px auto;padding:0 16px;display:flex;flex-direction:column;gap:18px}
+h1{font-size:1.5rem;margin:0}h2{font-size:1.05rem;margin:0}
+.sub,.msg{color:var(--muted);margin:0}.msg.err{color:var(--warn)}
+.btn{font:inherit;border:1px solid var(--cta);background:var(--cta);color:var(--cta-fg);padding:8px 14px;border-radius:8px;cursor:pointer;font-weight:600}
+.btn.ghost{background:transparent;color:var(--accent);border-color:var(--accent)}
+.btn.danger{background:transparent;color:var(--warn);border-color:var(--warn)}
+.btn:hover:not([disabled]){background:var(--hov);border-color:var(--hov);color:#fff}
+.btn[disabled]{opacity:.5;cursor:default}
+.btn:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,.chip:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:12px}
+.actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.chip{font:inherit;border:1px solid var(--line);background:var(--surface);color:var(--fg);padding:5px 12px;border-radius:999px;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
+input[type=text],input[type=date],select,textarea{font:inherit;width:100%;padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--fg)}
+textarea{resize:vertical;min-height:34px}
+section.blk{background:var(--surface);border:1px solid var(--line);border-top:4px solid var(--cta);border-radius:10px;overflow:hidden}
+.bh{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:12px 16px;border-bottom:1px solid var(--line)}
+.bh .cnt{font-family:var(--mono);font-size:.85rem;color:var(--muted)}
+table{width:100%;border-collapse:collapse;table-layout:fixed}
+th{font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);text-align:left;padding:8px;background:var(--bg)}
+td{padding:6px 8px;border-top:1px solid var(--line);vertical-align:top}
+tr.done td{background:var(--ok-soft)}
+.empty{padding:16px;color:var(--muted)}
+.tag{font-size:.75rem;font-weight:600;padding:2px 10px;border-radius:999px;border:1px solid var(--line)}
+.who{font-size:.75rem;color:var(--muted)}
+@media (max-width:760px){table,thead,tbody,tr,td{display:block}thead{display:none}td{border:0;padding:4px 12px}tr{border-top:1px solid var(--line);padding:6px 0}}
+.drop{border:2px dashed var(--line);border-radius:10px;padding:18px;text-align:center;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="brandbar"><i></i><b>ePackPro</b><span>Support SGC · Préparation de la réunion du lundi</span><div class="sp"></div>
+<button class="btn ghost" id="theme" style="color:#fff;border-color:#fff" aria-label="Changer de thème">Thème</button></div>
+<div class="wrap" id="app"></div>
+<script>
+"use strict";
+const FORMAT="preparation-reunion", VERSION=1;
+const STATUTS_T=["À traiter","En cours","En attente client","En attente QM","Résolu"];
+const STATUTS_M=["À planifier","Planifiée","Faite"];
+let handle=null, db=emptyDb(), lastMod=0, cur=null, filt="", me="", syncTxt="", dirty=false, saving=false, saveTimer=null;
+try{me=localStorage.getItem("prep-prenom")||""}catch(e){}
+function emptyDb(){return {format:FORMAT,version:VERSION,updatedAt:0,techniciens:["Damien","Matthieu","Tristan"],reunions:{}}}
+const $=(t,c,x)=>{const e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e};
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+const iso=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+const fdate=s=>s?new Date(s+"T12:00:00").toLocaleDateString("fr-FR",{weekday:"long",day:"numeric",month:"long",year:"numeric"}):"";
+function nextMonday(from){const d=new Date(from||Date.now());d.setHours(12);const add=(8-d.getDay())%7||7;d.setDate(d.getDate()+add);return iso(d)}
+
+/* ---------- fusion (dernier modifié gagne, élément par élément) ---------- */
+function mergeItems(a={},b={}){const o={};for(const k of new Set([...Object.keys(a),...Object.keys(b)])){const x=a[k],y=b[k];o[k]=!x?y:!y?x:((y.updatedAt||0)>(x.updatedAt||0)?y:x)}return o}
+function mergeDb(l,r){
+  if(!r||r.format!==FORMAT)return l;
+  const o={format:FORMAT,version:VERSION,updatedAt:Math.max(l.updatedAt||0,r.updatedAt||0)};
+  o.techniciens=[...new Set([...(l.techniciens||[]),...(r.techniciens||[])])];
+  o.reunions={};
+  for(const k of new Set([...Object.keys(l.reunions||{}),...Object.keys(r.reunions||{})])){
+    const x=l.reunions[k],y=(r.reunions||{})[k];
+    if(!x){o.reunions[k]=y;continue}if(!y){o.reunions[k]=x;continue}
+    const m={id:k,lundi:x.lundi};
+    for(const f of ["tickets","majs","points"])m[f]=mergeItems(x[f],y[f]);
+    const nx=x.notesAt||0,ny=y.notesAt||0;m.notes=ny>nx?y.notes:x.notes;m.notesAt=Math.max(nx,ny);
+    o.reunions[k]=m;
+  }
+  return o;
+}
+
+/* ---------- fichier partagé (File System Access API) ---------- */
+const IDB="prep-reunion-idb";
+const idb=()=>new Promise((res,rej)=>{const r=indexedDB.open(IDB,1);r.onupgradeneeded=()=>r.result.createObjectStore("h");r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)});
+async function idbSet(v){try{const d=await idb();d.transaction("h","readwrite").objectStore("h").put(v,"file")}catch(e){}}
+async function idbGet(){try{const d=await idb();return await new Promise(res=>{const q=d.transaction("h").objectStore("h").get("file");q.onsuccess=()=>res(q.result||null);q.onerror=()=>res(null)})}catch(e){return null}}
+const supported=!!window.showOpenFilePicker;
+async function readRemote(){const f=await handle.getFile();lastMod=f.lastModified;const t=(await f.text()).trim();if(!t)return null;return JSON.parse(t)}
+async function openFile(){
+  try{[handle]=await showOpenFilePicker({types:[{description:"Données (JSON)",accept:{"application/json":[".json"]}}]})}catch(e){return}
+  await idbSet(handle);await connect(true);
+}
+async function reconnect(){handle=await idbGet();if(handle)await connect(true);else render()}
+async function connect(ask){
+  try{
+    if(await handle.queryPermission({mode:"readwrite"})!=="granted"){
+      if(!ask){syncTxt="Reconnexion nécessaire";render();return}
+      if(await handle.requestPermission({mode:"readwrite"})!=="granted"){syncTxt="Autorisation refusée";render();return}
+    }
+    const r=await readRemote();if(r&&r.format!==FORMAT){handle=null;syncTxt="Ce fichier n'est pas un fichier de préparation de réunion.";render();return}
+    if(r)db=mergeDb(db,r);syncTxt="Connecté";
+    if(!cur||!db.reunions[cur])cur=latestId();
+    render();
+  }catch(e){syncTxt="Lecture impossible";render()}
+}
+async function save(){
+  if(!handle||saving){dirty=true;return}
+  saving=true;dirty=false;syncTxt="Enregistrement…";paintSync();
+  try{
+    const r=await readRemote();if(r)db=mergeDb(db,r);
+    db.updatedAt=Date.now();
+    const w=await handle.createWritable();await w.write(JSON.stringify(db,null,1));await w.close();
+    lastMod=(await handle.getFile()).lastModified;syncTxt="Enregistré";
+  }catch(e){syncTxt="Échec d'enregistrement";dirty=true}
+  saving=false;paintSync();if(dirty)queueSave();
+}
+function queueSave(){clearTimeout(saveTimer);saveTimer=setTimeout(save,600)}
+function paintSync(){const e=document.getElementById("sync");if(e)e.textContent=syncTxt}
+setInterval(async()=>{
+  if(!handle||saving||dirty)return;
+  try{
+    const f=await handle.getFile();if(f.lastModified===lastMod)return;
+    const r=await readRemote();if(r){db=mergeDb(db,r);const a=document.activeElement;if(!(a&&/INPUT|TEXTAREA|SELECT/.test(a.tagName)))render()}
+    syncTxt="Synchronisé "+new Date().toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"});paintSync();
+  }catch(e){}
+},4000);
+
+/* ---------- données ---------- */
+const latestId=()=>Object.keys(db.reunions).sort((a,b)=>db.reunions[b].lundi.localeCompare(db.reunions[a].lundi))[0]||null;
+const live=o=>Object.values(o||{}).filter(x=>!x.deleted).sort((a,b)=>(a.createdAt||0)-(b.createdAt||0));
+function touch(it){it.updatedAt=Date.now();it.by=me||"";queueSave()}
+function newReunion(lundi,copyFrom){
+  const id="r-"+lundi;if(db.reunions[id]){cur=id;return}
+  const r={id,lundi,tickets:{},majs:{},points:{},notes:"",notesAt:Date.now()};
+  const src=copyFrom&&db.reunions[copyFrom];
+  if(src){ // reprend ce qui n'est pas terminé pour que les collègues retrouvent les données déjà saisies
+    live(src.tickets).filter(t=>t.statut!=="Résolu").forEach(t=>{const n=Object.assign({},t,{id:uid(),createdAt:Date.now(),updatedAt:Date.now()});r.tickets[n.id]=n});
+    live(src.majs).filter(m=>m.statut!=="Faite").forEach(m=>{const n=Object.assign({},m,{id:uid(),createdAt:Date.now(),updatedAt:Date.now()});r.majs[n.id]=n});
+    live(src.points).filter(p=>!p.fait).forEach(p=>{const n=Object.assign({},p,{id:uid(),createdAt:Date.now(),updatedAt:Date.now()});r.points[n.id]=n});
+  }
+  db.reunions[id]=r;cur=id;queueSave();render();
+}
+function addItem(kind,base){const r=db.reunions[cur];const it=Object.assign({id:uid(),createdAt:Date.now()},base);r[kind][it.id]=it;touch(it);render()}
+function delItem(kind,id){const it=db.reunions[cur][kind][id];it.deleted=true;touch(it);render()}
+
+/* ---------- vues ---------- */
+function field(it,key,kind,opts){
+  let el;
+  if(opts&&opts.options){el=$("select");[["",opts.blank||"-"],...opts.options.map(o=>[o,o])].forEach(([v,t])=>{const o=$("option",null,t);o.value=v;if((it[key]||"")===v)o.selected=true;el.appendChild(o)})}
+  else if(opts&&opts.area){el=$("textarea");el.rows=2;el.value=it[key]||""}
+  else{el=$("input");el.type=opts&&opts.type||"text";el.value=it[key]||""}
+  el.setAttribute("aria-label",opts&&opts.label||key);
+  if(opts&&opts.ph)el.placeholder=opts.ph;
+  el.onchange=()=>{it[key]=el.value;touch(it);if(opts&&opts.rerender)render()};
+  return el;
+}
+function block(titre,kind,cols,rows,mk,addBase,count){
+  const sec=$("section","blk");
+  const h=$("div","bh");h.appendChild($("h2",null,titre));
+  const ac=$("div","actions");ac.appendChild($("span","cnt",count));
+  const add=$("button","btn","+ Ajouter");add.onclick=()=>addItem(kind,addBase);ac.appendChild(add);h.appendChild(ac);sec.appendChild(h);
+  if(!rows.length){sec.appendChild($("div","empty","Rien pour le moment."));return sec}
+  const t=$("table");const cg=$("colgroup");cols.forEach(c=>{const e=$("col");e.style.width=c[1];cg.appendChild(e)});t.appendChild(cg);
+  const th=$("thead"),tr=$("tr");cols.forEach(c=>tr.appendChild($("th",null,c[0])));th.appendChild(tr);t.appendChild(th);
+  const tb=$("tbody");rows.forEach(it=>{const r=mk(it);tb.appendChild(r)});t.appendChild(tb);sec.appendChild(t);return sec;
+}
+function delBtn(kind,it){const b=$("button","btn danger","×");b.title="Supprimer";b.setAttribute("aria-label","Supprimer la ligne");b.onclick=()=>delItem(kind,it.id);return b}
+function cell(...els){const td=$("td");els.forEach(e=>td.appendChild(e));return td}
+function trame(r){
+  const L=[];const tk=live(r.tickets),mj=live(r.majs),pt=live(r.points);
+  L.push("Réunion du lundi "+fdate(r.lundi),"");
+  L.push("Tickets en cours");tk.forEach(t=>L.push("- "+[t.client,t.titre].filter(Boolean).join(" : ")+" ["+(t.statut||"")+"]"+(t.tech?" (Technicien : "+t.tech+")":"")+(t.note?" - "+t.note:"")));if(!tk.length)L.push("- aucun");
+  L.push("","MAJ à venir");mj.forEach(m=>L.push("- "+[m.groupement,m.desc].filter(Boolean).join(" : ")+(m.date?" - "+m.date:"")+" ["+(m.statut||"")+"]"+(m.tech?" (Technicien : "+m.tech+")":"")));if(!mj.length)L.push("- aucune");
+  L.push("","Points à demander aux CSM");pt.forEach(p=>L.push("- "+(p.fait?"[x] ":"[ ] ")+[p.csm,p.texte].filter(Boolean).join(" : ")));if(!pt.length)L.push("- aucun");
+  if(r.notes)L.push("","Notes",r.notes);
+  return L.join("\n");
+}
+function render(){
+  const app=document.getElementById("app");app.textContent="";
+  const top=$("div","panel");
+  const tr=$("div","actions");tr.appendChild($("h1",null,"Préparation de la réunion du lundi"));
+  const sy=$("span","msg"+(/Échec|refus|impossible|nécessaire/.test(syncTxt)?" err":""),syncTxt);sy.id="sync";sy.style.marginLeft="auto";tr.appendChild(sy);top.appendChild(tr);
+  if(!supported){top.appendChild($("p","msg err","Ce navigateur ne permet pas d'ouvrir le fichier partagé. Utilise Microsoft Edge ou Google Chrome."))}
+  const ca=$("div","actions");
+  const ob=$("button","btn",handle?"Changer de fichier":"Ouvrir le fichier de données");ob.onclick=openFile;ca.appendChild(ob);
+  if(handle&&/nécessaire/.test(syncTxt)){const rb=$("button","btn ghost","Reconnecter");rb.onclick=()=>connect(true);ca.appendChild(rb)}
+  const pi=$("input");pi.type="text";pi.placeholder="Ton prénom";pi.value=me;pi.style.maxWidth="160px";pi.setAttribute("aria-label","Ton prénom");
+  pi.onchange=()=>{me=pi.value.trim();try{localStorage.setItem("prep-prenom",me)}catch(e){}};ca.appendChild(pi);
+  top.appendChild(ca);app.appendChild(top);
+  if(!handle){const d=$("div","drop","Ouvre d'abord le fichier de données partagé (dossier SharePoint synchronisé) pour retrouver les préparations de l'équipe.");app.appendChild(d);return}
+  // sélection réunion
+  const ids=Object.keys(db.reunions).sort((a,b)=>db.reunions[b].lundi.localeCompare(db.reunions[a].lundi));
+  const bar=$("div","actions");
+  if(ids.length){const sel=$("select");sel.style.maxWidth="360px";sel.setAttribute("aria-label","Réunion");ids.forEach(i=>{const o=$("option",null,"Lundi "+fdate(db.reunions[i].lundi));o.value=i;if(i===cur)o.selected=true;sel.appendChild(o)});sel.onchange=()=>{cur=sel.value;render()};bar.appendChild(sel)}
+  const nb=$("button","btn ghost",ids.length?"Nouvelle préparation (reprend le reste à faire)":"Créer la première préparation");
+  nb.onclick=()=>newReunion(nextMonday(cur?db.reunions[cur].lundi:null),cur);bar.appendChild(nb);app.appendChild(bar);
+  const r=cur&&db.reunions[cur];if(!r)return;
+  // filtre technicien
+  const fb=$("div","actions");fb.appendChild($("span","msg","Technicien :"));
+  ["",...db.techniciens].forEach(n=>{const c=$("button","chip",n||"Tous");c.setAttribute("aria-pressed",String(filt===n));c.onclick=()=>{filt=n;render()};fb.appendChild(c)});
+  const ab=$("button","chip","+ Technicien");ab.onclick=()=>{const n=(prompt("Prénom du technicien ?")||"").trim();if(n&&!db.techniciens.includes(n)){db.techniciens.push(n);queueSave();render()}};fb.appendChild(ab);
+  app.appendChild(fb);
+  const byTech=a=>a.filter(x=>!filt||x.tech===filt);
+  const T=db.techniciens;
+  const tk=byTech(live(r.tickets));
+  app.appendChild(block("Tickets en cours","tickets",[["Ticket / sujet","26%"],["Client / groupement","16%"],["Technicien en charge","15%"],["Statut","14%"],["Note","23%"],["","6%"]],tk,
+    it=>{const tr=$("tr",it.statut==="Résolu"?"done":"");
+      tr.append(cell(field(it,"titre","tickets",{label:"Ticket",ph:"N° ou sujet"})),cell(field(it,"client","tickets",{label:"Client",ph:"Groupement"})),
+        cell(field(it,"tech","tickets",{options:T,blank:"Non assigné",label:"Technicien",rerender:true})),cell(field(it,"statut","tickets",{options:STATUTS_T,label:"Statut",rerender:true})),
+        cell(field(it,"note","tickets",{area:true,label:"Note"}),it.by?$("div","who","modifié par "+it.by):$("span")),cell(delBtn("tickets",it)));return tr},
+    {statut:"À traiter",tech:filt||""},tk.length+" ticket(s)"));
+  const mj=byTech(live(r.majs));
+  app.appendChild(block("MAJ à venir","majs",[["Groupement","20%"],["Modules / description","28%"],["Date prévue","14%"],["Technicien en charge","15%"],["Statut","16%"],["","7%"]],mj,
+    it=>{const tr=$("tr",it.statut==="Faite"?"done":"");
+      tr.append(cell(field(it,"groupement","majs",{label:"Groupement"})),cell(field(it,"desc","majs",{area:true,label:"Modules"})),cell(field(it,"date","majs",{type:"date",label:"Date"})),
+        cell(field(it,"tech","majs",{options:T,blank:"Non assigné",label:"Technicien",rerender:true})),cell(field(it,"statut","majs",{options:STATUTS_M,label:"Statut",rerender:true})),cell(delBtn("majs",it)));return tr},
+    {statut:"À planifier",tech:filt||""},mj.length+" MAJ"));
+  const pt=live(r.points);
+  app.appendChild(block("Points à demander aux CSM","points",[["Groupe / CSM","24%"],["Point à demander","56%"],["Fait","10%"],["","10%"]],pt,
+    it=>{const tr=$("tr",it.fait?"done":"");
+      const cb=$("input");cb.type="checkbox";cb.checked=!!it.fait;cb.setAttribute("aria-label","Fait");cb.onchange=()=>{it.fait=cb.checked;touch(it);render()};
+      tr.append(cell(field(it,"csm","points",{label:"CSM",ph:"Groupe ou CSM"})),cell(field(it,"texte","points",{area:true,label:"Point"})),cell(cb),cell(delBtn("points",it)));return tr},
+    {fait:false},pt.filter(p=>!p.fait).length+" à demander"));
+  // notes + export
+  const np=$("section","panel");np.appendChild($("h2",null,"Notes de la réunion"));
+  const ta=$("textarea");ta.rows=4;ta.value=r.notes||"";ta.setAttribute("aria-label","Notes");ta.onchange=()=>{r.notes=ta.value;r.notesAt=Date.now();queueSave()};np.appendChild(ta);
+  const ex=$("div","actions");
+  const cp=$("button","btn","Copier la trame (Confluence / mail)");const m=$("span","msg");
+  cp.onclick=async()=>{try{await navigator.clipboard.writeText(trame(r));m.textContent="Trame copiée."}catch(e){m.textContent="Copie impossible.";m.className="msg err"}};
+  const pr=$("button","btn ghost","Imprimer");pr.onclick=()=>window.print();
+  ex.append(cp,pr,m);np.appendChild(ex);app.appendChild(np);
+}
+document.getElementById("theme").onclick=()=>{
+  const d=document.documentElement,dark=d.dataset.theme?d.dataset.theme==="dark":matchMedia("(prefers-color-scheme:dark)").matches;
+  d.dataset.theme=dark?"light":"dark";
+};
+reconnect();render();
+</script>
+</body>
+</html>

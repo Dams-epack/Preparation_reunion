@@ -1,0 +1,8 @@
+# Les données de la réunion vont dans SharePoint, jamais sur GitHub
+donnees/
+*.json
+*.csv
+*.xlsx
+*.xml
+*.eml
+*.msg
