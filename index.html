@@ -1,5 +1,6 @@
 <!doctype html><html lang="fr"><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 <title>Point SGC du vendredi</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22%3E%3Crect width=%2264%22 height=%2264%22 rx=%2214%22 fill=%22%23305754%22/%3E%3Crect x=%2212%22 y=%2216%22 width=%2240%22 height=%2236%22 rx=%226%22 fill=%22%23F6F0EA%22/%3E%3Crect x=%2212%22 y=%2216%22 width=%2240%22 height=%2211%22 rx=%226%22 fill=%22%239BF944%22/%3E%3Crect x=%2212%22 y=%2222%22 width=%2240%22 height=%225%22 fill=%22%239BF944%22/%3E%3Crect x=%2220%22 y=%229%22 width=%225%22 height=%2212%22 rx=%222.5%22 fill=%22%23F6F0EA%22/%3E%3Crect x=%2239%22 y=%229%22 width=%225%22 height=%2212%22 rx=%222.5%22 fill=%22%23F6F0EA%22/%3E%3Cpath d=%22M22 41l7 7 14-15%22 fill=%22none%22 stroke=%22%23305754%22 stroke-width=%225.5%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22/%3E%3C/svg%3E">
 <style>
 /* Layout: one column of editable ledgers, agenda strip on top, everything saves on its own. */
 :root {
@@ -166,6 +167,7 @@ select.cell.selover { position: absolute; inset: 0; width: 100%; height: 100%; o
   #s-majs thead th:first-child, #s-tickets thead th:first-child { border-top-left-radius: 8px; }
   #s-majs thead th:last-child, #s-tickets thead th:last-child { border-top-right-radius: 8px; }
 }
+.ver { text-align: center; color: var(--muted); font-family: var(--font-mono); font-size: 12px; padding-top: 8px; }
 .banner { background: var(--warn-bg); color: var(--warn); border-radius: 8px; padding: 10px 14px; }
 .banner[hidden] { display: none; }
 @media (max-width: 520px) { h1 { font-size: 22px; } }
@@ -231,7 +233,7 @@ select.cell.selover { position: absolute; inset: 0; width: 100%; height: 100%; o
     </div>
     <div class="review" id="review" hidden></div>
     <div class="tablewrap"><table></table></div>
-    <div class="addrow"><button class="add" type="button" data-add>+ Ajouter une MAJ</button><button class="add danger" id="delall" type="button" title="Supprime toutes les lignes de ce tableau">Tout supprimer</button></div>
+    <div class="addrow"><button class="add" type="button" data-add>+ Ajouter une MAJ</button><button class="add" id="exphist" type="button" title="Exporte toutes les MAJ du tableau (semaines passées comprises) en fichier Excel (.csv)">Exporter l’historique</button><button class="add danger" id="delall" type="button" title="Supprime toutes les lignes de ce tableau">Tout supprimer</button></div>
   </section>
 
   <section id="s-csm">
@@ -259,6 +261,8 @@ select.cell.selover { position: absolute; inset: 0; width: 100%; height: 100%; o
     <div class="tablewrap"><table></table></div>
     <button class="add" type="button" data-add>+ Ajouter un outil</button>
   </section>
+
+  <footer class="ver" id="version">Point SGC du vendredi · version 1.1 · 20/10/2026</footer>
 </div>
 
 <datalist id="dl-statuts">
@@ -829,6 +833,42 @@ select.cell.selover { position: absolute; inset: 0; width: 100%; height: 100%; o
       })]).then(function () { done(true); }, function () { done(legacyCopy(out.html)); });
     } else { done(legacyCopy(out.html)); }
   });
+
+
+  // Export de l'historique des MAJ : toutes les lignes du tableau 2, triées par date, en CSV (séparateur ; pour Excel FR).
+  (function () {
+    var b = document.getElementById('exphist');
+    if (!b) return;
+    var label = b.textContent, standalone = !(window.claude && window.claude.use);
+    if (!standalone) b.textContent = 'Copier l’historique';
+    function flash(t) { b.textContent = t; setTimeout(function () { b.textContent = standalone ? label : 'Copier l’historique'; }, 2500); }
+    function rows() {
+      var st = state.majs, ids = (st.ids || Object.keys(st.vals || {})).slice();
+      var list = ids.map(function (id) { return st.vals[id] || {}; });
+      list.sort(function (a, c) { var x = dateVal(a.date), y = dateVal(c.date); if (!x && !y) return 0; if (!x) return 1; if (!y) return -1; return x < y ? -1 : x > y ? 1 : 0; });
+      return list.map(function (r) {
+        var d = parseDay(r.date), h = String(r.date || '').match(/(\d{1,2})\s*h(?:\s*(\d{2}))?/);
+        return [d ? p2s(d.getDate()) + '/' + p2s(d.getMonth() + 1) + '/' + d.getFullYear() : '', h ? h[1] + 'h' + (h[2] || '') : '', r.client || '', r.nature || '', r.req || '', r.retro || '', r.siege || '', r.fait || ''];
+      });
+    }
+    var HEAD = ['Date', 'Heure', 'Client / groupe', 'Nature de la MAJ', 'Requête Salesforce', 'Rétroplanning envoyé', 'Validée par le siège', 'Fait'];
+    b.addEventListener('click', function () {
+      var data = rows();
+      if (!data.length) { flash('Rien à exporter'); return; }
+      var q = function (v) { v = String(v == null ? '' : v).replace(/\r?\n/g, ' '); return /[;"]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
+      var csv = [HEAD].concat(data).map(function (l) { return l.map(q).join(';'); }).join('\r\n');
+      if (standalone) {
+        var url = URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' }));
+        var a = document.createElement('a'); a.href = url; a.download = 'historique-maj-' + new Date().toISOString().slice(0, 10) + '.csv';
+        document.body.appendChild(a); a.click(); a.remove(); setTimeout(function () { URL.revokeObjectURL(url); }, 2000);
+        flash(data.length + ' lignes exportées');
+      } else {
+        var tsv = [HEAD].concat(data).map(function (l) { return l.map(function (v) { return String(v == null ? '' : v).replace(/[\t\r\n]+/g, ' '); }).join('\t'); }).join('\n');
+        var done = function (ok) { flash(ok ? data.length + ' lignes copiées, collez dans Excel' : 'Copie impossible dans cette vue'); };
+        if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(tsv).then(function () { done(true); }, function () { done(false); }); else done(false);
+      }
+    });
+  })();
 
   window.addEventListener('resize', function () { document.querySelectorAll('textarea.cell').forEach(grow); });
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { document.querySelectorAll('textarea.cell').forEach(grow); });
